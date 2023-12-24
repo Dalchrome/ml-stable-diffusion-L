@@ -1297,6 +1297,7 @@ def get_pipeline(args):
                                             use_auth_token=True)
 
     pipe.load_lora_weights("latent-consistency/lcm-lora-sdv1-5", adapter_name="lcm")
+    pipe.fuse_lora()
 
     pipe.scheduler = LCMScheduler.from_config(pipe.scheduler.config)
 
