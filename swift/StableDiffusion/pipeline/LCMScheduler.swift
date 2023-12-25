@@ -50,6 +50,9 @@ public final class LCMScheduler: Scheduler {
     // Stores solverOrder (2) items
     public private(set) var modelOutputs: [MLShapedArray<Float32>] = []
 
+    private var random: TorchRandomSource
+
+
     /// Create a scheduler that uses a second order DPM-Solver++ algorithm.
     ///
     /// - Parameters:
@@ -106,6 +109,8 @@ public final class LCMScheduler: Scheduler {
             trainTimeStepCount: trainStepCount,
             seed: 12345
         )
+        random = TorchRandomSource(seed: 7)
+
         setTimeSteps(inferenceStepCount: stepCount)
     }
 
@@ -233,7 +238,6 @@ public final class LCMScheduler: Scheduler {
 
         var prevSample = denoised
         if stepIndex != inferenceStepCount - 1 {
-            var random = TorchRandomSource(seed: config.seed)
             let noise = random.normalShapedArray(output.shape, mean: 0.0, stdev: 1.0)
             prevSample.withUnsafeMutableShapedBufferPointer { (pt, _, _) in
                 noise.withUnsafeShapedBufferPointer { (n, _, _) in
