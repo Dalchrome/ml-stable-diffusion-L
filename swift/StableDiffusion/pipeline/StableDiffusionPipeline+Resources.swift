@@ -117,7 +117,9 @@ public extension StableDiffusionPipeline {
             unet = Unet(chunksAt: [unetChunk1URL, unetChunk2URL],
                         configuration: config)
         } else {
-            unet = Unet(modelAt: unetURL, configuration: config)
+            let _config = MLModelConfiguration()
+            _config.computeUnits = .all
+            unet = Unet(modelAt: unetURL, configuration: _config)
         }
 
         // Image Decoder
