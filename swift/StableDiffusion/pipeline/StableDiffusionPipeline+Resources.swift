@@ -123,7 +123,7 @@ public extension StableDiffusionPipeline {
         }
 
         // Image Decoder
-        let decoder = Decoder(modelAt: urls.decoderURL, configuration: config)
+        let decoder = Decoder(modelAt: urls.decoderURL, configuration: secondConfig)
 
         // Optional safety checker
         var safetyChecker: SafetyChecker? = nil
