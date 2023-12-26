@@ -82,11 +82,11 @@ public extension StableDiffusionPipeline {
             )
         } else {
             let tokenizer = try BPETokenizer(mergesAt: urls.mergesURL, vocabularyAt: urls.vocabURL)
-            textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: config)
+            textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: secondConfig)
         }
 #else
         let tokenizer = try BPETokenizer(mergesAt: urls.mergesURL, vocabularyAt: urls.vocabURL)
-        textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: config)
+        textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: secondConfig)
 #endif
 
         // ControlNet model
@@ -96,7 +96,7 @@ public extension StableDiffusionPipeline {
             return urls.controlNetDirURL.appending(path: fileName)
         }
         if !controlNetURLs.isEmpty {
-            controlNet = ControlNet(modelAt: controlNetURLs, configuration: config)
+            controlNet = ControlNet(modelAt: controlNetURLs, configuration: secondConfig)
         }
 
         // Unet model
@@ -119,7 +119,7 @@ public extension StableDiffusionPipeline {
             unet = Unet(chunksAt: [unetChunk1URL, unetChunk2URL],
                         configuration: config)
         } else {
-            unet = Unet(modelAt: unetURL, configuration: config)
+            unet = Unet(modelAt: unetURL, configuration: secondConfig)
         }
 
         // Image Decoder
