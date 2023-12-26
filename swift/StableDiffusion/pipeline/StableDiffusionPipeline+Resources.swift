@@ -129,7 +129,7 @@ public extension StableDiffusionPipeline {
         var safetyChecker: SafetyChecker? = nil
         if !disableSafety &&
             FileManager.default.fileExists(atPath: urls.safetyCheckerURL.path) {
-            safetyChecker = SafetyChecker(modelAt: urls.safetyCheckerURL, configuration: secondConfig)
+            safetyChecker = SafetyChecker(modelAt: urls.safetyCheckerURL, configuration: config)
         }
         
         // Optional Image Encoder
