@@ -132,7 +132,7 @@ struct StableDiffusionSample: ParsableCommand {
                 pipeline = try StableDiffusionPipeline(
                     resourcesAt: resourceURL,
                     controlNet: controlnet,
-                    configuration: config,
+                    configurations: [config],
                     disableSafety: disableSafety,
                     reduceMemory: reduceMemory,
                     useMultilingualTextEncoder: useMultilingualTextEncoder,
@@ -143,7 +143,7 @@ struct StableDiffusionSample: ParsableCommand {
             pipeline = try StableDiffusionPipeline(
                 resourcesAt: resourceURL,
                 controlNet: controlnet,
-                configuration: config,
+                configurations: [config],
                 disableSafety: disableSafety,
                 reduceMemory: reduceMemory
             )

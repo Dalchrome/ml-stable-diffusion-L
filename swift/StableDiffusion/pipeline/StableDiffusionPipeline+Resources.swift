@@ -59,7 +59,7 @@ public extension StableDiffusionPipeline {
     init(
         resourcesAt baseURL: URL,
         controlNet controlNetModelNames: [String],
-        configuration config: MLModelConfiguration = .init(),
+        configurations configs: [MLModelConfiguration] = [],
         disableSafety: Bool = false,
         reduceMemory: Bool = false,
         useMultilingualTextEncoder: Bool = false,
@@ -68,6 +68,9 @@ public extension StableDiffusionPipeline {
         /// Expect URL of each resource
         let urls = ResourceURLs(resourcesAt: baseURL)
         let textEncoder: TextEncoderModel
+
+        let config = configs.first ?? MLModelConfiguration()
+        let secondConfig = configs.last ?? MLModelConfiguration()
 
 #if canImport(NaturalLanguage.NLScript)
         if useMultilingualTextEncoder {
@@ -93,7 +96,7 @@ public extension StableDiffusionPipeline {
             return urls.controlNetDirURL.appending(path: fileName)
         }
         if !controlNetURLs.isEmpty {
-            controlNet = ControlNet(modelAt: controlNetURLs, configuration: config)
+            controlNet = ControlNet(modelAt: controlNetURLs, configuration: secondConfig)
         }
 
         // Unet model
