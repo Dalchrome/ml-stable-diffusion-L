@@ -44,9 +44,6 @@ public final class ManagedMLModel: ResourceManaging {
 
     /// Unload the model if it was loaded
     public func unloadResources() {
-        if configuration.computeUnits == .all || configuration.computeUnits == .cpuAndNeuralEngine {
-            return // ANEならキープしてみる
-        }
         queue.sync {
             loadedModel = nil
         }
