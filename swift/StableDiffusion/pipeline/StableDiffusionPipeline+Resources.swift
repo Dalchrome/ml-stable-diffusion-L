@@ -96,7 +96,7 @@ public extension StableDiffusionPipeline {
             return urls.controlNetDirURL.appending(path: fileName)
         }
         if !controlNetURLs.isEmpty {
-            controlNet = ControlNet(modelAt: controlNetURLs, configuration: secondConfig)
+            controlNet = ControlNet(modelAt: controlNetURLs, configuration: config)
         }
 
         // Unet model
