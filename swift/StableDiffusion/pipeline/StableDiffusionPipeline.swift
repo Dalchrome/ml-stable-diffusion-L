@@ -257,55 +257,56 @@ public struct StableDiffusionPipeline: StableDiffusionPipelineProtocol {
         // De-noising loop
         let timeSteps: [Int] = scheduler[0].calculateTimesteps(strength: timestepStrength)
         for (step,t) in timeSteps.enumerated() {
+            let progress = try autoreleasepool {
+                // Expand the latents for classifier-free guidance
+                // and input to the Unet noise prediction model
+                let latentUnetInput = latents.map {
+                    MLShapedArray<Float32>(concatenating: [$0, $0], alongAxis: 0)
+                }
 
-            // Expand the latents for classifier-free guidance
-            // and input to the Unet noise prediction model
-            let latentUnetInput = latents.map {
-                MLShapedArray<Float32>(concatenating: [$0, $0], alongAxis: 0)
-            }
-
-            // Before Unet, execute controlNet and add the output into Unet inputs
-            let additionalResiduals = try controlNet?.execute(
-                latents: latentUnetInput,
-                timeStep: t,
-                hiddenStates: hiddenStates,
-                images: controlNetConds
-            )
-            
-            // Predict noise residuals from latent samples
-            // and current time step conditioned on hidden states
-            var noise = try unet.predictNoise(
-                latents: latentUnetInput,
-                timeStep: t,
-                hiddenStates: hiddenStates,
-                additionalResiduals: additionalResiduals
-            )
-
-            noise = performGuidance(noise, config.guidanceScale)
-
-            // Have the scheduler compute the previous (t-1) latent
-            // sample given the predicted noise and current sample
-            for i in 0..<config.imageCount {
-                latents[i] = scheduler[i].step(
-                    output: noise[i],
+                // Before Unet, execute controlNet and add the output into Unet inputs
+                let additionalResiduals = try controlNet?.execute(
+                    latents: latentUnetInput,
                     timeStep: t,
-                    sample: latents[i]
+                    hiddenStates: hiddenStates,
+                    images: controlNetConds
+                )
+                
+                // Predict noise residuals from latent samples
+                // and current time step conditioned on hidden states
+                var noise = try unet.predictNoise(
+                    latents: latentUnetInput,
+                    timeStep: t,
+                    hiddenStates: hiddenStates,
+                    additionalResiduals: additionalResiduals
                 )
 
-                denoisedLatents[i] = scheduler[i].modelOutputs.last ?? latents[i]
+                noise = performGuidance(noise, config.guidanceScale)
+
+                // Have the scheduler compute the previous (t-1) latent
+                // sample given the predicted noise and current sample
+                for i in 0..<config.imageCount {
+                    latents[i] = scheduler[i].step(
+                        output: noise[i],
+                        timeStep: t,
+                        sample: latents[i]
+                    )
+
+                    denoisedLatents[i] = scheduler[i].modelOutputs.last ?? latents[i]
+                }
+
+                let currentLatentSamples = config.useDenoisedIntermediates ? denoisedLatents : latents
+
+                // Report progress
+                return Progress(
+                    pipeline: self,
+                    prompt: config.prompt,
+                    step: step,
+                    stepCount: timeSteps.count,
+                    currentLatentSamples: currentLatentSamples,
+                    configuration: config
+                )
             }
-
-            let currentLatentSamples = config.useDenoisedIntermediates ? denoisedLatents : latents
-
-            // Report progress
-            let progress = Progress(
-                pipeline: self,
-                prompt: config.prompt,
-                step: step,
-                stepCount: timeSteps.count,
-                currentLatentSamples: currentLatentSamples,
-                configuration: config
-            )
             if !progressHandler(progress) {
                 // Stop if requested by handler
                 return []
