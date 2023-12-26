@@ -65,6 +65,7 @@ public extension StableDiffusionPipeline {
         useMultilingualTextEncoder: Bool = false,
         script: Script? = nil
     ) throws {
+        let forceANEConfig = MLModelConfiguration()
 
         /// Expect URL of each resource
         let urls = ResourceURLs(resourcesAt: baseURL)
@@ -117,9 +118,7 @@ public extension StableDiffusionPipeline {
             unet = Unet(chunksAt: [unetChunk1URL, unetChunk2URL],
                         configuration: config)
         } else {
-            let _config = MLModelConfiguration()
-            _config.computeUnits = .all
-            unet = Unet(modelAt: unetURL, configuration: _config)
+            unet = Unet(modelAt: unetURL, configuration: forceANEConfig)
         }
 
         // Image Decoder
@@ -129,7 +128,7 @@ public extension StableDiffusionPipeline {
         var safetyChecker: SafetyChecker? = nil
         if !disableSafety &&
             FileManager.default.fileExists(atPath: urls.safetyCheckerURL.path) {
-            safetyChecker = SafetyChecker(modelAt: urls.safetyCheckerURL, configuration: config)
+            safetyChecker = SafetyChecker(modelAt: urls.safetyCheckerURL, configuration: forceANEConfig)
         }
         
         // Optional Image Encoder
