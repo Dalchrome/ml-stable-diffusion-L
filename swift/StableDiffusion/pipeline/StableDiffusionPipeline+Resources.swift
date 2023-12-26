@@ -82,11 +82,11 @@ public extension StableDiffusionPipeline {
             )
         } else {
             let tokenizer = try BPETokenizer(mergesAt: urls.mergesURL, vocabularyAt: urls.vocabURL)
-            textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: config)
+            textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: secondConfig)
         }
 #else
         let tokenizer = try BPETokenizer(mergesAt: urls.mergesURL, vocabularyAt: urls.vocabURL)
-        textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: config)
+        textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: secondConfig)
 #endif
 
         // ControlNet model
@@ -129,13 +129,13 @@ public extension StableDiffusionPipeline {
         var safetyChecker: SafetyChecker? = nil
         if !disableSafety &&
             FileManager.default.fileExists(atPath: urls.safetyCheckerURL.path) {
-            safetyChecker = SafetyChecker(modelAt: urls.safetyCheckerURL, configuration: config)
+            safetyChecker = SafetyChecker(modelAt: urls.safetyCheckerURL, configuration: secondConfig)
         }
         
         // Optional Image Encoder
         let encoder: Encoder?
         if FileManager.default.fileExists(atPath: urls.encoderURL.path) {
-            encoder = Encoder(modelAt: urls.encoderURL, configuration: config)
+            encoder = Encoder(modelAt: urls.encoderURL, configuration: secondConfig)
         } else {
             encoder = nil
         }
