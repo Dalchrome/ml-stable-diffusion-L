@@ -82,11 +82,11 @@ public extension StableDiffusionPipeline {
             )
         } else {
             let tokenizer = try BPETokenizer(mergesAt: urls.mergesURL, vocabularyAt: urls.vocabURL)
-            textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: secondConfig)
+            textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: config)
         }
 #else
         let tokenizer = try BPETokenizer(mergesAt: urls.mergesURL, vocabularyAt: urls.vocabURL)
-        textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: secondConfig)
+        textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: config)
 #endif
 
         // ControlNet model
@@ -96,7 +96,7 @@ public extension StableDiffusionPipeline {
             return urls.controlNetDirURL.appending(path: fileName)
         }
         if !controlNetURLs.isEmpty {
-            controlNet = ControlNet(modelAt: controlNetURLs, configuration: secondConfig)
+            controlNet = ControlNet(modelAt: controlNetURLs, configuration: config)
         }
 
         // Unet model
@@ -119,23 +119,23 @@ public extension StableDiffusionPipeline {
             unet = Unet(chunksAt: [unetChunk1URL, unetChunk2URL],
                         configuration: config)
         } else {
-            unet = Unet(modelAt: unetURL, configuration: secondConfig)
+            unet = Unet(modelAt: unetURL, configuration: config)
         }
 
         // Image Decoder
-        let decoder = Decoder(modelAt: urls.decoderURL, configuration: secondConfig)
+        let decoder = Decoder(modelAt: urls.decoderURL, configuration: config)
 
         // Optional safety checker
         var safetyChecker: SafetyChecker? = nil
         if !disableSafety &&
             FileManager.default.fileExists(atPath: urls.safetyCheckerURL.path) {
-            safetyChecker = SafetyChecker(modelAt: urls.safetyCheckerURL, configuration: config)
+            safetyChecker = SafetyChecker(modelAt: urls.safetyCheckerURL, configuration: secondConfig)
         }
         
         // Optional Image Encoder
         let encoder: Encoder?
         if FileManager.default.fileExists(atPath: urls.encoderURL.path) {
-            encoder = Encoder(modelAt: urls.encoderURL, configuration: secondConfig)
+            encoder = Encoder(modelAt: urls.encoderURL, configuration: config)
         } else {
             encoder = nil
         }
