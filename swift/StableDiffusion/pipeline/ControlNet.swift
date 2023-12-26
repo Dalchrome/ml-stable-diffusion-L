@@ -73,42 +73,44 @@ public struct ControlNet: ResourceManaging {
         var outputs: [[String: MLShapedArray<Float32>]] = []
         
         for (modelIndex, model) in models.enumerated() {
-            let inputs = try latents.map { latent in
-                let dict: [String: Any] = [
-                    "sample": MLMultiArray(latent),
-                    "timestep": MLMultiArray(t),
-                    "encoder_hidden_states": MLMultiArray(hiddenStates),
-                    "controlnet_cond": MLMultiArray(images[modelIndex])
-                ]
-                return try MLDictionaryFeatureProvider(dictionary: dict)
-            }
-            
-            let batch = MLArrayBatchProvider(array: inputs)
-            
-            let results = try model.perform {
-                try $0.predictions(fromBatch: batch)
-            }
-            
-            // pre-allocate MLShapedArray with a specific shape in outputs
-            if outputs.isEmpty {
-                outputs = initOutputs(
-                    batch: latents.count,
-                    shapes: results.features(at: 0).featureValueDictionary
-                )
-            }
-            
-            for n in 0..<results.count {
-                let result = results.features(at: n)
-                for k in result.featureNames {
-                    let newValue = result.featureValue(for: k)!.multiArrayValue!
-                    if modelIndex == 0 {
-                        outputs[n][k] = MLShapedArray<Float32>(newValue)
-                    } else {
-                        let outputArray = MLMultiArray(outputs[n][k]!)
-                        let count = newValue.count
-                        let inputPointer = newValue.dataPointer.assumingMemoryBound(to: Float.self)
-                        let outputPointer = outputArray.dataPointer.assumingMemoryBound(to: Float.self)
-                        vDSP_vadd(inputPointer, 1, outputPointer, 1, outputPointer, 1, vDSP_Length(count))
+            try autoreleasepool {
+                let inputs = try latents.map { latent in
+                    let dict: [String: Any] = [
+                        "sample": MLMultiArray(latent),
+                        "timestep": MLMultiArray(t),
+                        "encoder_hidden_states": MLMultiArray(hiddenStates),
+                        "controlnet_cond": MLMultiArray(images[modelIndex])
+                    ]
+                    return try MLDictionaryFeatureProvider(dictionary: dict)
+                }
+                
+                let batch = MLArrayBatchProvider(array: inputs)
+                
+                let results = try model.perform {
+                    try $0.predictions(fromBatch: batch)
+                }
+                
+                // pre-allocate MLShapedArray with a specific shape in outputs
+                if outputs.isEmpty {
+                    outputs = initOutputs(
+                        batch: latents.count,
+                        shapes: results.features(at: 0).featureValueDictionary
+                    )
+                }
+                
+                for n in 0..<results.count {
+                    let result = results.features(at: n)
+                    for k in result.featureNames {
+                        let newValue = result.featureValue(for: k)!.multiArrayValue!
+                        if modelIndex == 0 {
+                            outputs[n][k] = MLShapedArray<Float32>(newValue)
+                        } else {
+                            let outputArray = MLMultiArray(outputs[n][k]!)
+                            let count = newValue.count
+                            let inputPointer = newValue.dataPointer.assumingMemoryBound(to: Float.self)
+                            let outputPointer = outputArray.dataPointer.assumingMemoryBound(to: Float.self)
+                            vDSP_vadd(inputPointer, 1, outputPointer, 1, outputPointer, 1, vDSP_Length(count))
+                        }
                     }
                 }
             }

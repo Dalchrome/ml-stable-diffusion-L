@@ -210,18 +210,19 @@ public struct Unet: ResourceManaging {
         // Manual pipeline batch prediction
         let inputs = batch.arrayOfFeatureValueDictionaries
         for stage in models.dropFirst() {
+            try autoreleasepool {
+                // Combine the original inputs with the outputs of the last stage
+                let next = try results.arrayOfFeatureValueDictionaries
+                    .enumerated().map { (index, dict) in
+                        let nextDict =  dict.merging(inputs[index]) { (out, _) in out }
+                        return try MLDictionaryFeatureProvider(dictionary: nextDict)
+                }
+                let nextBatch = MLArrayBatchProvider(array: next)
 
-            // Combine the original inputs with the outputs of the last stage
-            let next = try results.arrayOfFeatureValueDictionaries
-                .enumerated().map { (index, dict) in
-                    let nextDict =  dict.merging(inputs[index]) { (out, _) in out }
-                    return try MLDictionaryFeatureProvider(dictionary: nextDict)
-            }
-            let nextBatch = MLArrayBatchProvider(array: next)
-
-            // Predict
-            results = try stage.perform { model in
-                try model.predictions(fromBatch: nextBatch)
+                // Predict
+                results = try stage.perform { model in
+                    try model.predictions(fromBatch: nextBatch)
+                }
             }
         }
 
