@@ -69,24 +69,26 @@ public extension StableDiffusionPipeline {
         let urls = ResourceURLs(resourcesAt: baseURL)
         let textEncoder: TextEncoderModel
 
-        let config = configs.first ?? MLModelConfiguration()
-        let secondConfig = configs.last ?? MLModelConfiguration()
+        let unetConfig = configs.first ?? MLModelConfiguration()
+        let controlNetConfig = configs.count >= 2 ? configs[1] : unetConfig
+        let safetyConfig = configs.count >= 3 ? configs[2] : controlNetConfig
+        let otherConfig = configs.count >= 4 ? configs[3] : safetyConfig
 
 #if canImport(NaturalLanguage.NLScript)
         if useMultilingualTextEncoder {
             guard #available(macOS 14.0, iOS 17.0, *) else { throw PipelineError.unsupportedOSVersion }
             textEncoder = MultilingualTextEncoder(
                 modelAt: urls.multilingualTextEncoderProjectionURL,
-                configuration: config,
+                configuration: otherConfig,
                 script: script ?? .latin
             )
         } else {
             let tokenizer = try BPETokenizer(mergesAt: urls.mergesURL, vocabularyAt: urls.vocabURL)
-            textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: config)
+            textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: otherConfig)
         }
 #else
         let tokenizer = try BPETokenizer(mergesAt: urls.mergesURL, vocabularyAt: urls.vocabURL)
-        textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: config)
+        textEncoder = TextEncoder(tokenizer: tokenizer, modelAt: urls.textEncoderURL, configuration: otherConfig)
 #endif
 
         // ControlNet model
@@ -96,7 +98,7 @@ public extension StableDiffusionPipeline {
             return urls.controlNetDirURL.appending(path: fileName)
         }
         if !controlNetURLs.isEmpty {
-            controlNet = ControlNet(modelAt: controlNetURLs, configuration: config)
+            controlNet = ControlNet(modelAt: controlNetURLs, configuration: controlNetConfig)
         }
 
         // Unet model
@@ -117,25 +119,25 @@ public extension StableDiffusionPipeline {
         if FileManager.default.fileExists(atPath: unetChunk1URL.path) &&
             FileManager.default.fileExists(atPath: unetChunk2URL.path) {
             unet = Unet(chunksAt: [unetChunk1URL, unetChunk2URL],
-                        configuration: config)
+                        configuration: unetConfig)
         } else {
-            unet = Unet(modelAt: unetURL, configuration: config)
+            unet = Unet(modelAt: unetURL, configuration: unetConfig)
         }
 
         // Image Decoder
-        let decoder = Decoder(modelAt: urls.decoderURL, configuration: config)
+        let decoder = Decoder(modelAt: urls.decoderURL, configuration: otherConfig)
 
         // Optional safety checker
         var safetyChecker: SafetyChecker? = nil
         if !disableSafety &&
             FileManager.default.fileExists(atPath: urls.safetyCheckerURL.path) {
-            safetyChecker = SafetyChecker(modelAt: urls.safetyCheckerURL, configuration: secondConfig)
+            safetyChecker = SafetyChecker(modelAt: urls.safetyCheckerURL, configuration: safetyConfig)
         }
         
         // Optional Image Encoder
         let encoder: Encoder?
         if FileManager.default.fileExists(atPath: urls.encoderURL.path) {
-            encoder = Encoder(modelAt: urls.encoderURL, configuration: config)
+            encoder = Encoder(modelAt: urls.encoderURL, configuration: otherConfig)
         } else {
             encoder = nil
         }
